@@ -5,18 +5,21 @@ using System.Timers;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Devices;
 using Melanchall.DryWetMidi.Interaction;
+using System.Speech.Synthesis;
+using Melanchall.DryWetMidi.Common;
 
 namespace MIDI
 {
     class Program
     {
-        private static Random rng = new Random();
+        private static readonly Random rng = new Random();
         private static readonly string[] basicnotes = { "C", null , "D", null, "E", "F", null, "G", null, "A", null, "B" };
         private static readonly string[] sharpnotes = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
         private static readonly string[] flatnotes = { "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B" };
 
         private static void Main(string[] args)
         {
+            SpeechSynthesizer tts = new SpeechSynthesizer();
             int counter = 0;
             int points = 0;
             Console.WriteLine("Note Practice");
@@ -31,26 +34,32 @@ namespace MIDI
                 Console.WriteLine("Super Basic Mode");
                 Console.WriteLine("White keys only");
                 Console.WriteLine("Starting:");
-                InputDevice inputDevice = SelectMidiDevice(InputDevice.GetAll().ToList());
+                InputDevice inputDevice = SelectMidiInput(InputDevice.GetAll().ToList());
+                OutputDevice outputDevice = SelectMidiOutput(OutputDevice.GetAll().ToList());
                 string midiNotePlayed = null;
                 inputDevice.EventReceived += (midisender, midievent) => MidiEventReceived(midisender, midievent, ref midiNotePlayed);
+                outputDevice.EventSent += OutputDevice_EventSent;
                 inputDevice.StartEventsListening();
                 while (counter < 20)
                 {
+                    int noteNumber = 0;
                     bool cheatMode = true;
+                    string note = null;
+                    while (note == null)
+                    {
+                        noteNumber = rng.Next(12);
+                        note = basicnotes[noteNumber];
+                    }
                     Timer antiCheatTimer = new Timer
                     {
                         Interval = 100,
                         Enabled = true
                     };
+                    outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127));
                     antiCheatTimer.Elapsed += (antiCheatSender, antiCheatEvent) => ChangeBoolToFalse(antiCheatSender, antiCheatEvent, ref cheatMode);
-                    string note = null;
-                    while (note == null)
-                    {
-                        int noteNumber = rng.Next(12);
-                        note = basicnotes[noteNumber];
-                    }
                     Console.WriteLine(note);
+                    tts.SpeakAsyncCancelAll();
+                    tts.SpeakAsync(note);
                     while (cheatMode)
                     {
                         if (midiNotePlayed != null)
@@ -60,6 +69,7 @@ namespace MIDI
                             goto End;
                         }
                     }
+                    outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127));
                     antiCheatTimer.Dispose();
                     Timer timer = new Timer
                     {
@@ -82,6 +92,8 @@ namespace MIDI
                                 Console.WriteLine($"Correct! You scored {pointsToAdd} points.");
                                 Console.ResetColor();
                                 Console.WriteLine();
+                                tts.SpeakAsyncCancelAll();
+                                tts.SpeakAsync("Correct.");
                                 points += pointsToAdd;
                             }
                             else
@@ -90,6 +102,8 @@ namespace MIDI
                                 Console.WriteLine($"Incorrect! You were asked to play {note}, no points for you this time.");
                                 Console.ResetColor();
                                 Console.WriteLine();
+                                tts.SpeakAsyncCancelAll();
+                                tts.SpeakAsync("Incorrect.");
                             }
                             bool oneSecondBreak = true;
                             Timer oneSecond = new Timer
@@ -113,13 +127,16 @@ namespace MIDI
                     note = null;
                 }
                 inputDevice.Dispose();
+                outputDevice.Dispose();
                 Console.WriteLine();
                 Console.WriteLine($"Results: You scored {points} points. Congratulations!");
+                tts.SpeakAsyncCancelAll();
+                tts.SpeakAsync($"Results: You scored {points} points. Congratulations!");
                 Console.ReadLine();
             }
             else if (input1 == '2' || input1 == '3')
             {
-                InputDevice inputDevice = SelectMidiDevice(InputDevice.GetAll().ToList());
+                InputDevice inputDevice = SelectMidiInput(InputDevice.GetAll().ToList());
                 string midiNotePlayed = null;
                 inputDevice.EventReceived += (midisender, midievent) => MidiEventReceived(midisender, midievent, ref midiNotePlayed);
                 inputDevice.StartEventsListening();
@@ -128,16 +145,18 @@ namespace MIDI
                 while (counter < 20)
                 {
                     bool cheatMode = true;
+                    int noteNumber = rng.Next(12);
+                    bool sharpFlag = rng.NextDouble() < 0.5;
+                    string note = sharpFlag ? sharpnotes[noteNumber] : flatnotes[noteNumber];
+                    Console.WriteLine(note);
+                    tts.SpeakAsyncCancelAll();
+                    tts.SpeakAsync(note.Replace("#", " sharp").Replace("b", " flat"));
                     Timer antiCheatTimer = new Timer
                     {
                         Interval = 100,
                         Enabled = true
                     };
                     antiCheatTimer.Elapsed += (antiCheatSender, antiCheatEvent) => ChangeBoolToFalse(antiCheatSender, antiCheatEvent, ref cheatMode);
-                    int noteNumber = rng.Next(12);
-                    bool sharpFlag = rng.NextDouble() < 0.5;
-                    string note = sharpFlag ? sharpnotes[noteNumber] : flatnotes[noteNumber];
-                    Console.WriteLine(note);
                     while (cheatMode)
                     {
                         if (midiNotePlayed != null)
@@ -170,6 +189,8 @@ namespace MIDI
                                 Console.WriteLine($"Correct! You scored {pointsToAdd} points.");
                                 Console.ResetColor();
                                 Console.WriteLine();
+                                tts.SpeakAsyncCancelAll();
+                                tts.SpeakAsync("Correct.");
                                 points += pointsToAdd;
                             }
                             else
@@ -178,6 +199,8 @@ namespace MIDI
                                 Console.WriteLine($"Incorrect! You were asked to play {note}, no points for you this time.");
                                 Console.ResetColor();
                                 Console.WriteLine();
+                                tts.SpeakAsyncCancelAll();
+                                tts.SpeakAsync("Incorrect.");
                             }
                             bool oneSecondBreak = true;
                             Timer oneSecond = new Timer
@@ -202,11 +225,39 @@ namespace MIDI
                 inputDevice.Dispose();
                 Console.WriteLine();
                 Console.WriteLine($"Results: You scored {points} points. Congratulations!");
+                tts.SpeakAsyncCancelAll();
+                tts.SpeakAsync($"Results: You scored {points} points. Congratulations!");
                 Console.ReadLine();
             }
         }
 
-        private static InputDevice SelectMidiDevice(List<InputDevice> list)
+        private static void OutputDevice_EventSent(object sender, MidiEventSentEventArgs e)
+        {
+        }
+
+        private static OutputDevice SelectMidiOutput(List<OutputDevice> list)
+        {
+            if (list.Count() == 1)
+            {
+                return list[0];
+            }
+            else if (list.Count > 1)
+            {
+                Console.WriteLine("Select your MIDI device:");
+                for (int i = 0; i < list.Count(); i++)
+                {
+                    Console.WriteLine($"{i}: {list[i]}");
+                }
+                int input = int.Parse(Console.ReadLine());
+                return input < list.Count() && input >= 0 ? list[input] : null;
+            }
+            else
+            {
+                throw new ArgumentNullException("No MIDI device found");
+            }
+        }
+
+        private static InputDevice SelectMidiInput(List<InputDevice> list)
         {
             if (list.Count() == 1)
             {
