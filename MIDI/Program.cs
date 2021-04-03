@@ -6,6 +6,7 @@ using System.Speech.Synthesis;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Devices;
 using Melanchall.DryWetMidi.Common;
+using System.Text.RegularExpressions;
 
 namespace MIDI
 {
@@ -93,6 +94,7 @@ namespace MIDI
                 {
                     Console.WriteLine("CHEAT! Wait for the note to come up before pressing anything!");
                     antiCheatTimer.Dispose();
+                    outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127));
                     return 0;
                 }
             }
@@ -167,7 +169,8 @@ namespace MIDI
             }
             else if (list.Count > 1)
             {
-                Console.WriteLine("Select your MIDI device:");
+                string[] typeOfDevice = Regex.Split(typeof(T).Name, @"(?<!^)(?=[A-Z])");
+                Console.WriteLine($"Select your MIDI {typeOfDevice[0]} {typeOfDevice[1]}:");
                 for (int i = 0; i < list.Count(); i++)
                 {
                     Console.WriteLine($"{i}: {list[i]}");
