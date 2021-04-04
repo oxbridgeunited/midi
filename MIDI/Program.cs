@@ -25,11 +25,10 @@ namespace MIDI
             Console.WriteLine("2: Basic");
             Console.WriteLine("3: Advanced");
             Console.WriteLine("x: exit");
-            string input1 = Console.ReadKey().KeyChar.ToString();
+            string input1 = Console.ReadLine();
             Console.WriteLine();
             InputDevice inputDevice = SelectMidiDevice(InputDevice.GetAll().ToList());
             OutputDevice outputDevice = SelectMidiDevice(OutputDevice.GetAll().ToList());
-            int points = 0;
             if (input1 == "1")
             {
                 Console.WriteLine("Super Basic mode: White keys only");
@@ -38,6 +37,7 @@ namespace MIDI
             {
                 Console.WriteLine("Midi mode: White and black keys");
             }
+            int points = 0;
             if (int.TryParse(input1, out _))
             {
                 Console.WriteLine("Starting:");
@@ -61,22 +61,9 @@ namespace MIDI
             inputDevice.EventReceived += (midisender, midievent) => MidiEventReceived(midisender, midievent, ref midiNotePlayed);
             inputDevice.StartEventsListening();
             outputDevice.EventSent += OutputDevice_EventSent;
-            int noteNumber = -1;
-            string noteToPlay = null;
-            bool sharpflag = rng.NextDouble() < 0.5;
-            if (mode == "1")
-            {
-                while (noteToPlay == null)
-                {
-                    noteNumber = rng.Next(12);
-                    noteToPlay = naturalnotes[noteNumber];
-                }
-            }
-            else
-            {
-                noteNumber = rng.Next(12);
-                noteToPlay = sharpflag ? sharpnotes[noteNumber] : flatnotes[noteNumber];
-            }
+            int noteNumber = rng.Next(12);
+            double sharpflag = rng.NextDouble();
+            string noteToPlay = GetNoteToPlay(mode, ref noteNumber, sharpflag);
             outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127));
             Console.WriteLine(noteToPlay);
             tts.SpeakAsyncCancelAll();
@@ -95,11 +82,12 @@ namespace MIDI
                     Console.WriteLine("CHEAT! Wait for the note to come up before pressing anything!");
                     antiCheatTimer.Dispose();
                     outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127));
+                    OneSecondBreak();
                     return 0;
                 }
             }
-            outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127));
             antiCheatTimer.Dispose();
+            outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127));
             Timer timer = new Timer
             {
                 Interval = 1000,
@@ -112,11 +100,52 @@ namespace MIDI
                 // waiting for MIDI input
                 if (midiNotePlayed != -1)
                 {
-                    int pointsScored = NotePlayed(mode == "1" ? naturalnotes[midiNotePlayed] : sharpflag ? sharpnotes[midiNotePlayed] : flatnotes[midiNotePlayed], noteToPlay, pointsToAdd);
+                    int pointsScored = NotePlayed(GetNotePlayed(mode, midiNotePlayed, sharpflag), noteToPlay, pointsToAdd);
                     timer.Dispose();
                     return pointsScored;
                 }
             }
+        }
+
+        private static string GetNoteToPlay(string mode, ref int noteNumber, double sharpflag)
+        {
+            string noteToPlay = mode != "2" ? naturalnotes[noteNumber] : sharpflag < 0.5 ? sharpnotes[noteNumber] : flatnotes[noteNumber];
+            while (noteToPlay == null)
+            {
+                noteNumber = rng.Next(12);
+                noteToPlay = naturalnotes[noteNumber];
+            }
+            if (mode == "3" && sharpflag < 0.5)
+            {
+                if (sharpflag < 0.25)
+                {
+                    noteNumber = (noteNumber + 1) % 12;
+                    return noteToPlay + "#";
+                }
+                else
+                {
+                    noteNumber = (noteNumber + 11) % 12;
+                    return noteToPlay + "b";
+                }
+            }
+            return noteToPlay;
+        }
+        private static string GetNotePlayed(string mode, int noteNumber, double sharpflag)
+        {
+            string notePlayed = mode != "2" || sharpflag < 0.5 ? sharpnotes[noteNumber] : flatnotes[noteNumber];
+            if (mode == "3" && sharpflag < 0.5)
+            {
+                notePlayed = sharpflag < 0.25 ? sharpnotes[(noteNumber + 11) % 12] + "#" : flatnotes[(noteNumber + 1) % 12] + "b";
+                if (notePlayed.Contains("##"))
+                {
+                    return sharpnotes[noteNumber];
+                }
+                if (notePlayed.Contains("bb"))
+                {
+                    return flatnotes[noteNumber];
+                }
+            }
+            return notePlayed;
         }
 
         private static int NotePlayed(string midiNotePlayed, string noteToPlay, int pointsToAdd)
@@ -142,6 +171,12 @@ namespace MIDI
                 tts.SpeakAsync("Incorrect.");
             }
             Console.WriteLine();
+            OneSecondBreak();
+            return points;
+        }
+
+        private static void OneSecondBreak()
+        {
             bool oneSecondBreak = true;
             Timer oneSecond = new Timer
             {
@@ -154,7 +189,6 @@ namespace MIDI
 
             }
             oneSecond.Dispose();
-            return points;
         }
 
         private static void OutputDevice_EventSent(object sender, MidiEventSentEventArgs e)
