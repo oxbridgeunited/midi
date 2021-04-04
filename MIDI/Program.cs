@@ -21,28 +21,16 @@ namespace MIDI
         private static void Main()
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("WELCOME TO MIDI PRACTICE!\nSelect mode by typing number (1 to 4) and hitting ENTER.\n\n");
+            Console.WriteLine("WELCOME TO MIDI PRACTICE!\nSelect mode by typing number (1 to 5) and hitting ENTER.\n\n");
             Console.ResetColor();
             Console.WriteLine("1: Numpad Mode\n    Numbers 0 to 9 (no MIDI keyboard required!)\n");
-            Console.WriteLine("2: Basic Mode\n    White keys only\n");
-            Console.WriteLine("3: Regular Mode\n    White keys and black keys\n");
-            Console.WriteLine("4: Advanced Mode\n    All naturals, sharps and flats.\n");
+            Console.WriteLine("2: Basic Mode\n    White keys only, notes are always natural.\n");
+            Console.WriteLine("3: Regular Mode\n    White keys are always natural, and black keys are always sharp.\n");
+            Console.WriteLine("4: Semi-Advanced Mode\n    White keys are always natural, and black keys can be either sharp or flat.\n");
+            Console.WriteLine("5: Advanced Mode\n    White keys are NOT always natural, and black keys can be either sharp or flat.\n");
             Console.WriteLine("x: Exit");
             Console.WriteLine();
-            InputDevice inputDevice = null;
             bool game = int.TryParse(Console.ReadLine(), out int input);
-            if (input > 1)
-            {
-                inputDevice = SelectMidiDevice(InputDevice.GetAll().ToList());
-                if (inputDevice == default)
-                {
-                    input = 1;
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("A MIDI keyboard is required for this mode! Starting Numpad Mode instead.\nPress ENTER to continue.");
-                    Console.ResetColor();
-                    Console.ReadLine();
-                }
-            }
             switch (input)
             {
                 case 1:
@@ -55,6 +43,9 @@ namespace MIDI
                     Console.WriteLine("Regular mode selected.");
                     break;
                 case 4:
+                    Console.WriteLine("Semi-Advanced mode selected.");
+                    break;
+                case 5:
                     Console.WriteLine("Advanced mode selected.");
                     break;
                 default:
@@ -63,28 +54,32 @@ namespace MIDI
             }
             if (game)
             {
+                InputDevice inputDevice = null;
                 OutputDevice outputDevice = SelectMidiDevice(OutputDevice.GetAll().ToList());
                 outputDevice.EventSent += EmptyEvent;
-                int preGameCountdown = 3;
-                while (preGameCountdown > 0)
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-                    Console.WriteLine($"Starting: in {preGameCountdown}"); //BUG accepts inputs during countdown
-                    Console.ResetColor();
-                    preGameCountdown -= 1;
-                    Pause(1000);
-                }
                 int rounds = input == 1 ? 30 : 20; //more rounds for Numpad mode!!
                 int points = 0;
                 if (input > 1)
                 {
+                    inputDevice = SelectMidiDevice(InputDevice.GetAll().ToList());
+                    if (inputDevice == default)
+                    {
+                        input = 1;
+                        rounds = 30;
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("A MIDI keyboard is required for this mode! Starting Numpad Mode instead.\nPress ENTER to continue.");
+                        Console.ResetColor();
+                        Console.ReadLine();
+                    }
+                    PreGameCountDown();
                     for (int i = 0; i < rounds; i++)
                     {
-                        points += MIDIMode(outputDevice, inputDevice, input);
+                        points += input > 1 ? MIDIMode(outputDevice, inputDevice, input) : NumpadMode();
                     }
                 }
                 else if (input == 1) //Numpad Mode
                 {
+                    PreGameCountDown();
                     for (int i = 0; i < rounds; i++)
                     {
                         points += NumpadMode();
@@ -129,6 +124,20 @@ namespace MIDI
             Console.WriteLine("\nPress ENTER to exit.");
             Console.ReadLine();
         }
+
+        private static void PreGameCountDown()
+        {
+            int preGameCountdown = 3;
+            while (preGameCountdown > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.WriteLine($"Starting: in {preGameCountdown}"); //BUG accepts inputs during countdown
+                Console.ResetColor();
+                preGameCountdown -= 1;
+                Pause(1000);
+            }
+        }
+
         private static int NumpadMode()
         {
             string numToPlay = rng.Next(10).ToString();
@@ -210,18 +219,19 @@ namespace MIDI
             {
                 // waiting for MIDI input
             }
+            Console.WriteLine();
             timer.Dispose();
             return NotePlayed(GetNotePlayed(mode, midiNotePlayed, sharpflag), noteToPlay, pointsToAdd);
         }
         private static string GetNoteToPlay(int mode, ref int noteNumber, double sharpflag)
         {
-            string noteToPlay = mode != 3 ? naturalnotes[noteNumber] : sharpflag < 0.5 ? sharpnotes[noteNumber] : flatnotes[noteNumber];
+            string noteToPlay = mode == 2 | mode == 5 ? naturalnotes[noteNumber] : mode == 4 && sharpflag >= 0.5 ? flatnotes[noteNumber] : sharpnotes[noteNumber];
             while (noteToPlay == null)
             {
                 noteNumber = rng.Next(12);
                 noteToPlay = naturalnotes[noteNumber];
             }
-            if (mode == 4 && sharpflag < 0.5)
+            if (mode == 5 && sharpflag < 0.5)
             {
                 if (sharpflag < 0.25)
                 {
@@ -238,8 +248,8 @@ namespace MIDI
         }
         private static string GetNotePlayed(int mode, int noteNumber, double sharpflag)
         {
-            string notePlayed = mode != 3 || sharpflag < 0.5 ? sharpnotes[noteNumber] : flatnotes[noteNumber];
-            if (mode == 4 && sharpflag < 0.5)
+            string notePlayed = mode != 4 || sharpflag < 0.5 ? sharpnotes[noteNumber] : flatnotes[noteNumber];
+            if (mode == 5 && sharpflag < 0.5)
             {
                 notePlayed = sharpflag < 0.25 ? sharpnotes[(noteNumber + 11) % 12] + "#" : flatnotes[(noteNumber + 1) % 12] + "b";
                 if (notePlayed.Contains("##"))
@@ -253,12 +263,12 @@ namespace MIDI
             }
             return notePlayed;
         }
-        private static int NotePlayed(string midiNotePlayed, string noteToPlay, int pointsToAdd)
+        private static int NotePlayed(string notePlayed, string noteToPlay, int pointsToAdd)
         {
             int points = 0;
-            Console.WriteLine($"You hit: {midiNotePlayed}");
+            Console.WriteLine($"You hit: {notePlayed}");
             Console.WriteLine();
-            if (midiNotePlayed == noteToPlay)
+            if (notePlayed == noteToPlay)
             {
                 Console.ForegroundColor = pointsToAdd == 5 ? ConsoleColor.Yellow : ConsoleColor.Green;
                 Console.WriteLine($"Correct! You scored {pointsToAdd} points.");
@@ -314,9 +324,9 @@ namespace MIDI
                 int input = int.Parse(Console.ReadLine());
                 return input < list.Count() && input >= 0 ? list[input] : throw new ArgumentOutOfRangeException("Pick a MIDI device listed");
             }
-            else 
+            else
             {
-                return default; 
+                return default;
             }
         }
         private static void MidiEventReceived(object sender, MidiEventReceivedEventArgs e, ref int output)
