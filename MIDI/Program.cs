@@ -28,8 +28,7 @@ namespace MIDI
             Console.WriteLine("3: Regular Mode\n    White keys are always natural, and black keys are always sharp.\n");
             Console.WriteLine("4: Semi-Advanced Mode\n    White keys are always natural, and black keys can be either sharp or flat.\n");
             Console.WriteLine("5: Advanced Mode\n    White keys are NOT always natural, and black keys can be either sharp or flat.\n");
-            Console.WriteLine("x: Exit");
-            Console.WriteLine();
+            Console.WriteLine("x: Exit\n");
             bool game = int.TryParse(Console.ReadLine(), out int input); // get the game mode the user selected
             switch (input)
             {
@@ -71,20 +70,12 @@ namespace MIDI
                         Console.ResetColor();
                         Console.ReadLine();
                     }
-                    PreGameCountDown(); // get ready...
-                    for (int i = 0; i < rounds; i++) // and play the game!
-                    { 
-                        points += input > 1 // pick the correct game
-                            ? MIDIMode(outputDevice, inputDevice, input) : NumpadMode(); // and add points if they get the note correct
-                    }
                 }
-                else if (input == 1) // Numpad Mode
+                PreGameCountDown(); // get ready...
+                for (int i = 0; i < rounds; i++) // and play the game!
                 {
-                    PreGameCountDown(); // get ready...
-                    for (int i = 0; i < rounds; i++) // and play the game!
-                    {
-                        points += NumpadMode(); // add points if they get the number correct
-                    }
+                    points += input > 1 // pick the correct game
+                        ? MIDIMode(outputDevice, inputDevice, input) : NumpadMode(); // and add points if they get the note correct
                 }
                 if (inputDevice != null) // always dispose your IDisposables when you're done with them
                 {
@@ -145,7 +136,7 @@ namespace MIDI
             tts.SpeakAsyncCancelAll();
             tts.SpeakAsync($"{numToPlay}. . . . . . . . . . . .{numToPlay}."); // Using lots of fullstops to generate gap between repeat
             Pause(500);
-            Console.WriteLine(numToPlay);
+            Console.WriteLine(numToPlay + "\n");
             Timer antiCheatTimer = new Timer
             { 
                 Interval = 100,
@@ -189,7 +180,7 @@ namespace MIDI
             outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127)); // plays the note to play
             tts.SpeakAsyncCancelAll();
             tts.SpeakAsync(noteToPlay.Replace("#", " Sharp").Replace("b", " Flat"));
-            Console.WriteLine(noteToPlay);
+            Console.WriteLine(noteToPlay + "\n");
             Timer antiCheatTimer = new Timer
             {
                 Interval = 100,
@@ -273,12 +264,11 @@ namespace MIDI
         private static int NotePlayed(string notePlayed, string noteToPlay, int pointsToAdd)
         {
             int points = 0;
-            Console.WriteLine($"You hit: {notePlayed}");
-            Console.WriteLine();
+            Console.WriteLine($"You hit: {notePlayed}\n");
             if (notePlayed == noteToPlay) // check if the note played matches the expected note
             {
                 Console.ForegroundColor = pointsToAdd == 5 ? ConsoleColor.Yellow : ConsoleColor.Green; // yellow if perfect, otherwise green
-                Console.WriteLine($"Correct! You scored {pointsToAdd} points.");
+                Console.WriteLine($"Correct! You scored {pointsToAdd} points.\n");
                 Console.ResetColor();
                 tts.SpeakAsyncCancelAll();
                 points += pointsToAdd;
@@ -286,13 +276,12 @@ namespace MIDI
             else // if it is wrong
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Incorrect! You were asked to hit {noteToPlay}, no points for you this time.");
+                Console.WriteLine($"Incorrect! You were asked to hit {noteToPlay}, no points for you this time.\n");
                 Console.ResetColor();
                 tts.SpeakAsyncCancelAll();
                 tts.SpeakAsync("Incorrect.");
                 Pause(800); // give them some breathing time
             }
-            Console.WriteLine();
             Pause(400);
             return points;
         }
