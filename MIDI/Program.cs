@@ -36,19 +36,19 @@ namespace MIDI
             switch (input)
             {
                 case 1:
-                    Console.WriteLine("Numpad mode selected.");
+                    Console.WriteLine("Numpad mode selected. \nScore Attack - 30 rounds.");
                     break;
                 case 2:
-                    Console.WriteLine("Basic mode selected.");
+                    Console.WriteLine("Basic mode selected. \nScore Attack - 20 rounds.");
                     break;
                 case 3:
-                    Console.WriteLine("Regular mode selected.");
+                    Console.WriteLine("Regular mode selected. \nScore Attack - 20 rounds.");
                     break;
                 case 4:
-                    Console.WriteLine("Semi-Advanced mode selected.");
+                    Console.WriteLine("Semi-Advanced mode selected. \nScore Attack - 20 rounds.");
                     break;
                 case 5:
-                    Console.WriteLine("Advanced mode selected.");
+                    Console.WriteLine("Advanced mode selected. \nScore Attack - 20 rounds.");
                     break;
                 default:
                     Console.WriteLine("Press ENTER to exit.");
@@ -70,7 +70,7 @@ namespace MIDI
         {
             OutputDevice outputDevice = SelectMidiDevice(OutputDevice.GetAll().ToList()); // get the output device
             outputDevice.EventSent += EmptyEvent;
-            int rounds = input == 1 ? 10 : 20; // more rounds for Numpad mode
+            int rounds = input == 1 ? 30 : 20; // 20 rounds standard, but 30 for Numpad mode
             InputDevice inputDevice = null;
             if (input > 1) // MIDI mode selected
             {
