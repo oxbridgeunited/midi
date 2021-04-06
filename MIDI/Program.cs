@@ -188,7 +188,7 @@ namespace MIDI
             string noteToPlay = GetNoteToPlay(mode, ref noteNumber, sharpflag); // turns the note number and uses the sharpflag to get the note to play
             outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127)); // plays the note to play
             tts.SpeakAsyncCancelAll();
-            tts.SpeakAsync(noteToPlay.Replace("#", ": Sharp").Replace("b", ": Flat"));
+            tts.SpeakAsync(noteToPlay.Replace("#", " Sharp").Replace("b", " Flat"));
             Console.WriteLine(noteToPlay + "\n");
             Timer antiCheatTimer = new Timer
             {
