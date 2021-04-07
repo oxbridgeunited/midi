@@ -377,7 +377,31 @@ namespace MIDI
             {
                 Console.ForegroundColor = pointsToAdd == 5 ? ConsoleColor.Yellow : ConsoleColor.Green;
                 Console.WriteLine(ASCIIyes);
-                Console.WriteLine($"Correct!" + (endlessMode ? "" : $" You scored {pointsToAdd} points." ) + "\n");
+                Console.WriteLine($"Correct!" + (endlessMode ? "" : $" You scored {pointsToAdd} points."));
+                if (!endlessMode)
+                {
+                    switch (pointsToAdd)
+                    {
+                        case 1:
+                            Console.WriteLine("██  \n");
+                            break;
+                        case 2:
+                            Console.WriteLine("██  ██  \n");
+                            break;
+                        case 3:
+                            Console.WriteLine("██  ██  ██  \n");
+                            break;
+                        case 4:
+                            Console.WriteLine("██  ██  ██  ██  \n");
+                            break;
+                        case 5:
+                            Console.WriteLine("██  ██  ██  ██  ██  \n");
+                            break;
+                        default:
+                            Console.WriteLine("\n");
+                            break;
+                    }
+                }
                 Console.ResetColor();
                 tts.SpeakAsyncCancelAll();
                 points += pointsToAdd;
