@@ -134,9 +134,7 @@ namespace MIDI
         }
         private static bool EndlessOrScore()
         {
-            while (true)
-            {
-                string gameType = Console.ReadLine();
+            string gameType = Console.ReadLine();
                 if (gameType == "2" || gameType == "4") // Disable Text-To-Speech
                 {
                     tts.Pause();
@@ -150,11 +148,11 @@ namespace MIDI
                     return true;
                 }
                 Console.WriteLine("Type a number from 1 to 4");
-            }
+            return EndlessOrScore();
         }
         private static void GameCode(bool endlessMode, int input, OutputDevice outputDevice, InputDevice inputDevice = null)
         {
-            PreGameCountDown(); // get ready...
+            PreGameCountDown(3); // get ready...
             int points = 0;
             int plays = 0;
             int rounds = input == 1 ? 30 : 20; // 20 rounds standard, but 30 for Numpad
@@ -202,15 +200,13 @@ namespace MIDI
                 tts.SpeakAsync($"Results: You scored {points} out of a maximum of {perfectScore} points.");
             }
         }
-        private static void PreGameCountDown()
+        private static void PreGameCountDown(int seconds)
         {
-            int preGameCountDown = 3; // 3 second countdown
-            while (preGameCountDown > 0)
+            for (int i = seconds; i > 0; i--)
             {
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-                Console.WriteLine($"Starting: in {preGameCountDown}");
+                Console.WriteLine($"Starting: in {i}");
                 Console.ResetColor();
-                preGameCountDown -= 1;
                 Pause(1000); // 1 second each
             }
         }
