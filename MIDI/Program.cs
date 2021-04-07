@@ -20,7 +20,7 @@ namespace MIDI
         private static readonly string ScoreAttackASCII = "  ____                                      _      _     _                    _    \n / ___|    ___    ___    _ __    ___       / \\    | |_  | |_    __ _    ___  | | __\n \\___ \\   / __|  / _ \\  | '__|  / _ \\     / _ \\   | __| | __|  / _` |  / __| | |/ /\n  ___) | | (__  | (_) | | |    |  __/    / ___ \\  | |_  | |_  | (_| | | (__  |   < \n |____/   \\___|  \\___/  |_|     \\___|   /_/   \\_\\  \\__|  \\__|  \\__,_|  \\___| |_|\\_\\\n";
         private static readonly string EndlessModeASCII = "   _____               _   _                        __  __               _        \n  | ____|  _ __     __| | | |   ___   ___   ___    |  \\/  |   ___     __| |   ___ \n  |  _|   | '_ \\   / _` | | |  / _ \\ / __| / __|   | |\\/| |  / _ \\   / _` |  / _ \\\n  | |___  | | | | | (_| | | | |  __/ \\__ \\ \\__ \\   | |  | | | (_) | | (_| | |  __/\n  |_____| |_| |_|  \\__,_| |_|  \\___| |___/ |___/   |_|  |_|  \\___/   \\__,_|  \\___|\n";
 
-        //ASCII no 0 - 9
+        // ASCII no 0 - 9
         private static readonly string ASCII0 = "\n\n    █████   \n   ██   ██  \n  ██     ██ \n  ██     ██ \n  ██     ██ \n   ██   ██  \n    █████   \n";
         private static readonly string ASCII1 = "\n\n      ██   \n    ████   \n      ██   \n      ██   \n      ██   \n      ██   \n    ██████ \n";
         private static readonly string ASCII2 = "\n\n   ███████  \n  ██     ██ \n         ██ \n   ███████  \n  ██        \n  ██        \n  █████████ \n";
@@ -32,10 +32,10 @@ namespace MIDI
         private static readonly string ASCII8 = "\n\n   ███████  \n  ██     ██ \n  ██     ██ \n   ███████  \n  ██     ██ \n  ██     ██ \n   ███████  \n";
         private static readonly string ASCII9 = "\n\n   ███████  \n  ██     ██ \n  ██     ██ \n   ████████ \n         ██ \n  ██     ██ \n   ███████  \n";
 
-        //ASCII CDEFGAB
-        //If Natural, 's'+'#'+'f'+'b' are removed.
-        //If Sharp,   's' becomes ' ', '#' becomes '█'. 'f'+'b' are removed.
-        //If Flat,    'f' becomes ' ', 'b' becomes '█'. 's'+'#' are removed.
+        // ASCII CDEFGAB
+        // If Natural, 's'+'#'+'f'+'b' are removed.
+        // If Sharp,   's' becomes ' ', '#' becomes '█'. 'f'+'b' are removed.
+        // If Flat,    'f' becomes ' ', 'b' becomes '█'. 's'+'#' are removed.
         private static readonly string ASCIIC = "\n\n   ███████ sss##s##ssfbbfffff\n  ██     ██sss##s##ssfbbfffff\n  ██       s#########fbbfffff\n  ██       sss##s##ssfbbbbbbf\n  ██       s#########fbbfffbb\n  ██     ██sss##s##ssfbbfffbb\n   ███████ sss##s##ssfbbbbbbf\n\n";
         private static readonly string ASCIID = "\n\n  ████████ sss##s##ssfbbfffff\n  ██     ██sss##s##ssfbbfffff\n  ██     ██s#########fbbfffff\n  ██     ██sss##s##ssfbbbbbbf\n  ██     ██s#########fbbfffbb\n  ██     ██sss##s##ssfbbfffbb\n  ████████ sss##s##ssfbbbbbbf\n\n";
         private static readonly string ASCIIE = "\n\n  █████████sss##s##ssfbbfffff\n  ██       sss##s##ssfbbfffff\n  ██       s#########fbbfffff\n  ███████  sss##s##ssfbbbbbbf\n  ██       s#########fbbfffbb\n  ██       sss##s##ssfbbfffbb\n  █████████sss##s##ssfbbbbbbf\n\n";
@@ -44,7 +44,7 @@ namespace MIDI
         private static readonly string ASCIIA = "\n\n     ███   sss##s##ssfbbfffff\n    ██ ██  sss##s##ssfbbfffff\n   ██   ██ s#########fbbfffff\n  ██     ██sss##s##ssfbbbbbbf\n  █████████s#########fbbfffbb\n  ██     ██sss##s##ssfbbfffbb\n  ██     ██sss##s##ssfbbbbbbf\n\n";
         private static readonly string ASCIIB = "\n\n  ████████ sss##s##ssfbbfffff\n  ██     ██sss##s##ssfbbfffff\n  ██     ██s#########fbbfffff\n  ████████ sss##s##ssfbbbbbbf\n  ██     ██s#########fbbfffbb\n  ██     ██sss##s##ssfbbfffbb\n  ████████ sss##s##ssfbbbbbbf\n\n";
 
-        //ASCII Correct and Incorrect
+        // ASCII Correct and Incorrect
         private static readonly string ASCIIyes = "           ██\n          ██ \n         ██  \n        ██   \n  ██   ██    \n   ██ ██     \n    ███      \n";
         private static readonly string ASCIIno = "   ██     ██ \n    ██   ██  \n     ██ ██   \n      ███    \n     ██ ██   \n    ██   ██  \n   ██     ██ \n";
 
@@ -59,25 +59,7 @@ namespace MIDI
             Console.WriteLine("3: Endless Mode");
             Console.WriteLine("4: Endless Mode - Text To Speech DISABLED");
             Console.ResetColor();
-            bool endlessMode = true;
-            while (true)
-            {
-                string input0 = Console.ReadLine();
-                if (input0 == "2" || input0 == "4") //Disable Text-To-Speech
-                {
-                    tts.Pause();
-                }
-                if (input0 == "1" | input0 == "2") //Score Attack
-                {
-                    endlessMode = false;
-                    break;
-                }
-                else if (input0 == "3" || input0 == "4") //Endless Mode
-                {
-                    break;
-                }
-                Console.WriteLine("Type a number from 1 to 4");
-            }
+            bool endlessMode = EndlessOrScore();
             Console.ForegroundColor = endlessMode ? ConsoleColor.Cyan : ConsoleColor.Yellow;
             Console.WriteLine(endlessMode ? EndlessModeASCII : ScoreAttackASCII);
             Console.WriteLine("Select difficulty by typing number (1 to 5) and hitting ENTER.\n\n");
@@ -88,24 +70,24 @@ namespace MIDI
             Console.WriteLine("4: Semi-Advanced\n    White keys are always natural, and black keys can be either sharp or flat.\n");
             Console.WriteLine("5: Advanced\n    White keys are NOT always natural, and black keys can be either sharp or flat.\n");
             Console.WriteLine("x: Exit\n");
-            bool game = int.TryParse(Console.ReadLine(), out int input); // get the game difficulty the user selected
-            string modeType = endlessMode ? "Endless Mode." : "Score Attack - 20 rounds.";
-            switch (input)
+            bool game = int.TryParse(Console.ReadLine(), out int gameDifficulty); // get the game difficulty the user selected
+            string modeString = endlessMode ? "Endless Mode." : "Score Attack - 20 rounds.";
+            switch (gameDifficulty)
             {
                 case 1:
-                    Console.WriteLine("Numpad selected. \n" + (endlessMode ? modeType : "Score Attack - 30 rounds."));
+                    Console.WriteLine("Numpad selected. \n" + (endlessMode ? modeString : "Score Attack - 30 rounds."));
                     break;
                 case 2:
-                    Console.WriteLine("Basic selected. \n" + modeType);
+                    Console.WriteLine("Basic selected. \n" + modeString);
                     break;
                 case 3:
-                    Console.WriteLine("Regular selected. \n" + modeType);
+                    Console.WriteLine("Regular selected. \n" + modeString);
                     break;
                 case 4:
-                    Console.WriteLine("Semi-Advanced selected. \n" + modeType);
+                    Console.WriteLine("Semi-Advanced selected. \n" + modeString);
                     break;
                 case 5:
-                    Console.WriteLine("Advanced selected. \n" + modeType);
+                    Console.WriteLine("Advanced selected. \n" + modeString);
                     break;
                 default:
                     Console.WriteLine("Press ENTER to exit.");
@@ -117,12 +99,12 @@ namespace MIDI
             {
                 outputDevice = SelectMidiDevice(OutputDevice.GetAll().ToList()); // get output device
                 outputDevice.EventSent += EmptyEvent;
-                if (input > 1)
+                if (gameDifficulty > 1)
                 {
                     inputDevice = SelectMidiDevice(InputDevice.GetAll().ToList()); // get input device for MIDI mode
                     if (inputDevice == default) // if no input devices, default to Numpad
                     {
-                        input = 1;
+                        gameDifficulty = 1;
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("A MIDI keyboard is required for this difficulty! Starting Numpad instead.\nPress ENTER to continue.");
                         Console.ResetColor();
@@ -132,7 +114,7 @@ namespace MIDI
             }
             while (game) // we're playing
             {
-                GameCode(endlessMode, input, outputDevice, inputDevice); // the game is in here
+                GameCode(endlessMode, gameDifficulty, outputDevice, inputDevice); // the game is in here
                 Console.WriteLine("Want to play again? Type Y to replay the game.");
                 if (Console.ReadLine().ToLower() != "y") // if the user doesn't want to play
                 {
@@ -150,12 +132,32 @@ namespace MIDI
             }
             Console.ReadLine();
         }
+        private static bool EndlessOrScore()
+        {
+            while (true)
+            {
+                string gameType = Console.ReadLine();
+                if (gameType == "2" || gameType == "4") // Disable Text-To-Speech
+                {
+                    tts.Pause();
+                }
+                if (gameType == "1" | gameType == "2") // Score Attack
+                {
+                    return false;
+                }
+                else if (gameType == "3" || gameType == "4") // Endless Mode
+                {
+                    return true;
+                }
+                Console.WriteLine("Type a number from 1 to 4");
+            }
+        }
         private static void GameCode(bool endlessMode, int input, OutputDevice outputDevice, InputDevice inputDevice = null)
         {
-            int rounds = input == 1 ? 30 : 20; // 20 rounds standard, but 30 for Numpad
             PreGameCountDown(); // get ready...
             int points = 0;
             int plays = 0;
+            int rounds = input == 1 ? 30 : 20; // 20 rounds standard, but 30 for Numpad
             while (plays < rounds)
             {
                 points += input > 1 // pick the correct game
@@ -163,9 +165,8 @@ namespace MIDI
                 plays += 1;
                 if (endlessMode)
                 {
-                    int percentage = (int)Math.Round((double)points / plays * 100);
-                    Console.WriteLine($"Accuracy: {percentage}% ({points}/{plays})");
-                    rounds += 1; //In Endless Mode, keep incrementing the round count to make it impossible to reach
+                    Console.WriteLine($"Accuracy: {(int)Math.Round((double)points / plays * 100)}% ({points}/{plays})");
+                    rounds += 1; // In Endless Mode, keep incrementing the round count to make it impossible to reach
                 }
                 Pause(400);
             }
@@ -176,7 +177,6 @@ namespace MIDI
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine($"Results: You achieved a perfect score with {points} points! Congratulations!");
                 Console.ResetColor();
-
                 tts.SpeakAsyncCancelAll();
                 tts.SpeakAsync($"Perfect Score! Results: You achieved a perfect score with {points} points. Congratulations!");
                 outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)60, (SevenBitNumber)127)); // C
@@ -269,21 +269,21 @@ namespace MIDI
             outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127)); // plays the note to play
             tts.SpeakAsyncCancelAll();
             tts.SpeakAsync(noteToPlay.Replace("#", " Sharp").Replace("b", " Flat"));
-            if (noteToPlay.Contains("#")) //display the note using ASCII art
+            if (noteToPlay.Contains("#")) // display the note using ASCII art
             {
-                //Sharp
+                // Sharp
                 noteASCII = noteToASCII[(noteNumber + 11 ) % 12];
                 Console.WriteLine(noteASCII.Replace("s", " ").Replace("f", "").Replace("b", "").Replace("#", "█"));
             }
             else if (noteToPlay.Contains("b"))
             {
-                //Flat
+                // Flat
                 noteASCII = noteToASCII[(noteNumber + 1) % 12];
                 Console.WriteLine(noteASCII.Replace("s", "").Replace("#", "").Replace("f", " ").Replace("b", "█"));
             }
             else
             {
-                //Natural
+                // Natural
                 Console.WriteLine(noteASCII.Replace("s", "").Replace("#", "").Replace("f", "").Replace("b", ""));
             }
             Timer antiCheatTimer = new Timer
