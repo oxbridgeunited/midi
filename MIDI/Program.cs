@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Timers;
 using System.Speech.Synthesis;
+using System.Text.RegularExpressions;
+using System.Timers;
+using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Devices;
-using Melanchall.DryWetMidi.Common;
-using System.Text.RegularExpressions;
 
 namespace MIDI
 {
@@ -18,45 +18,78 @@ namespace MIDI
         private static readonly string[] sharpnotes = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
         private static readonly string[] flatnotes = { "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B" };
         private static readonly string ScoreAttackASCII = "  ____                                      _      _     _                    _    \n / ___|    ___    ___    _ __    ___       / \\    | |_  | |_    __ _    ___  | | __\n \\___ \\   / __|  / _ \\  | '__|  / _ \\     / _ \\   | __| | __|  / _` |  / __| | |/ /\n  ___) | | (__  | (_) | | |    |  __/    / ___ \\  | |_  | |_  | (_| | | (__  |   < \n |____/   \\___|  \\___/  |_|     \\___|   /_/   \\_\\  \\__|  \\__|  \\__,_|  \\___| |_|\\_\\\n";
+        private static readonly string EndlessModeASCII = "\n  _____               _   _                       __     __                      _                 \n | ____|  _ __     __| | | |   ___   ___   ___    \\ \\   / /   ___   _ __   ___  (_)   ___    _ __  \n |  _|   | '_ \\   / _` | | |  / _ \\ / __| / __|    \\ \\ / /   / _ \\ | '__| / __| | |  / _ \\  | '_ \\ \n | |___  | | | | | (_| | | | |  __/ \\__ \\ \\__ \\     \\ V /   |  __/ | |    \\__ \\ | | | (_) | | | | |\n |_____| |_| |_|  \\__,_| |_|  \\___| |___/ |___/      \\_/     \\___| |_|    |___/ |_|  \\___/  |_| |_|\n";
 
         private static void Main()
         {
-            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("WELCOME TO MIDI PRACTICE");
-            Console.WriteLine(ScoreAttackASCII);
-            Console.WriteLine("Select mode by typing number (1 to 5) and hitting ENTER.\n\n");
+            Console.WriteLine("For Score Attack, type 1, for Endless Mode, type 2.");
+            bool endlessMode = true;
+            while (true)
+            {
+                string input0 = Console.ReadLine();
+                if (input0 == "1")
+                {
+                    endlessMode = false;
+                    break;
+                }
+                else if (input0 == "2")
+                {
+                    break;
+                }
+                Console.WriteLine("Type 1 or 2");
+            }
+            Console.ForegroundColor = endlessMode ? ConsoleColor.Cyan : ConsoleColor.Yellow;
+            Console.WriteLine(endlessMode ? EndlessModeASCII : ScoreAttackASCII);
+            Console.WriteLine("Select difficulty by typing number (1 to 5) and hitting ENTER.\n\n");
             Console.ResetColor();
-            Console.WriteLine("1: Numpad Mode\n    Numbers 0 to 9, no MIDI keyboard required!\n");
-            Console.WriteLine("2: Basic Mode\n    White keys only, notes are always natural.\n");
-            Console.WriteLine("3: Regular Mode\n    White keys are always natural, and black keys are always sharp.\n");
-            Console.WriteLine("4: Semi-Advanced Mode\n    White keys are always natural, and black keys can be either sharp or flat.\n");
-            Console.WriteLine("5: Advanced Mode\n    White keys are NOT always natural, and black keys can be either sharp or flat.\n");
+            Console.WriteLine("1: Numpad\n    Numbers 0 to 9, no MIDI keyboard required!\n");
+            Console.WriteLine("2: Basic\n    White keys only, notes are always natural.\n");
+            Console.WriteLine("3: Regular\n    White keys are always natural, and black keys are always sharp.\n");
+            Console.WriteLine("4: Semi-Advanced\n    White keys are always natural, and black keys can be either sharp or flat.\n");
+            Console.WriteLine("5: Advanced\n    White keys are NOT always natural, and black keys can be either sharp or flat.\n");
             Console.WriteLine("x: Exit\n");
-            bool game = int.TryParse(Console.ReadLine(), out int input); // get the game mode the user selected
+            bool game = int.TryParse(Console.ReadLine(), out int input); // get the game difficulty the user selected
+            string modeType = endlessMode ? "Endless Mode." : "Score Attack - 20 rounds.";
             switch (input)
             {
                 case 1:
-                    Console.WriteLine("Numpad mode selected. \nScore Attack - 30 rounds.");
+                    Console.WriteLine("Numpad selected. \n" + (endlessMode ? modeType : "Score Attack - 30 rounds."));
                     break;
                 case 2:
-                    Console.WriteLine("Basic mode selected. \nScore Attack - 20 rounds.");
+                    Console.WriteLine("Basic selected. \n" + modeType);
                     break;
                 case 3:
-                    Console.WriteLine("Regular mode selected. \nScore Attack - 20 rounds.");
+                    Console.WriteLine("Regular selected. \n" + modeType);
                     break;
                 case 4:
-                    Console.WriteLine("Semi-Advanced mode selected. \nScore Attack - 20 rounds.");
+                    Console.WriteLine("Semi-Advanced selected. \n" + modeType);
                     break;
                 case 5:
-                    Console.WriteLine("Advanced mode selected. \nScore Attack - 20 rounds.");
+                    Console.WriteLine("Advanced selected. \n" + modeType);
                     break;
                 default:
                     Console.WriteLine("Press ENTER to exit.");
                     break;
             }
+            OutputDevice outputDevice = SelectMidiDevice(OutputDevice.GetAll().ToList()); // get output device
+            outputDevice.EventSent += EmptyEvent;
+            InputDevice inputDevice = null;
+            if (game && input > 1)
+            {
+                inputDevice = SelectMidiDevice(InputDevice.GetAll().ToList()); // get input device for MIDI mode
+                if (inputDevice == default) // if no input devices, default to Numpad
+                {
+                    input = 1;
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("A MIDI keyboard is required for this difficulty! Starting Numpad instead.\nPress ENTER to continue.");
+                    Console.ResetColor();
+                    Console.ReadLine();
+                }
+            }
             while (game) // we're playing
             {
-                GameCode(input); // the game is in here
+                GameCode(endlessMode, input, outputDevice, inputDevice); // the game is in here
                 Console.WriteLine("Want to play again? Type Y to replay the game.");
                 if (Console.ReadLine().ToLower() != "y") // if the user doesn't want to play
                 {
@@ -64,40 +97,34 @@ namespace MIDI
                     Console.WriteLine("\nPress ENTER to exit.");
                 }
             }
-            Console.ReadLine();
-        }
-        private static void GameCode(int input)
-        {
-            OutputDevice outputDevice = SelectMidiDevice(OutputDevice.GetAll().ToList()); // get the output device
-            outputDevice.EventSent += EmptyEvent;
-            int rounds = input == 1 ? 30 : 20; // 20 rounds standard, but 30 for Numpad mode
-            InputDevice inputDevice = null;
-            if (input > 1) // MIDI mode selected
-            {
-                inputDevice = SelectMidiDevice(InputDevice.GetAll().ToList()); // get input device for MIDI mode
-                if (inputDevice == default) // if no input devices, default to Numpad mode
-                {
-                    input = 1;
-                    rounds = 30;
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("A MIDI keyboard is required for this mode! Starting Numpad Mode instead.\nPress ENTER to continue.");
-                    Console.ResetColor();
-                    Console.ReadLine();
-                }
-            }
-            PreGameCountDown(); // get ready...
-            int points = 0;
-            for (int i = 0; i < rounds; i++) // and play the game!
-            {
-                points += input > 1 // pick the correct game
-                    ? MIDIMode(outputDevice, inputDevice, input) : NumpadMode(); // and add points if they get the note correct
-            }
             if (inputDevice != null) // always dispose your IDisposables when you're done with them
             {
                 inputDevice.Dispose();
             }
+            outputDevice.Dispose(); // always dispose your IDisposables when you're done with them
+            Console.ReadLine();
+        }
+        private static void GameCode(bool endlessMode, int input, OutputDevice outputDevice, InputDevice inputDevice = null)
+        {
+            int rounds = input == 1 ? 30 : 20; // 20 rounds standard, but 30 for Numpad
+            PreGameCountDown(); // get ready...
+            int points = 0;
+            int plays = 0;
+            while (plays < rounds)
+            {
+                points += input > 1 // pick the correct game
+                    ? MIDIMode(outputDevice, inputDevice, input, endlessMode) : NumpadMode(endlessMode); // and add points if they get the note correct
+                plays += 1;
+                if (endlessMode)
+                {
+                    int percentage = (int)Math.Round((double)points / plays * 100);
+                    Console.WriteLine($"Accuracy: {percentage}% ({points}/{plays})");
+                }
+                Pause(400);
+            }
             Console.WriteLine();
-            if (points == 5 * rounds) // Perfect Score Announcement
+            int perfectScore = endlessMode ? plays : plays * 5;
+            if (points == perfectScore) // Perfect Score Announcement
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine($"Results: You achieved a perfect score with {points} points! Congratulations!");
@@ -122,11 +149,10 @@ namespace MIDI
             }
             else // Regular Score Announcement
             {
-                Console.WriteLine($"Results: You scored {points}/{5 * rounds} points.");
+                Console.WriteLine($"Results: You scored {points}/{perfectScore} points.");
                 tts.SpeakAsyncCancelAll();
-                tts.SpeakAsync($"Results: You scored {points} out of a maximum of {5 * rounds} points.");
+                tts.SpeakAsync($"Results: You scored {points} out of a maximum of {perfectScore} points.");
             }
-            outputDevice.Dispose(); // always dispose your IDisposables when you're done with them
         }
         private static void PreGameCountDown()
         {
@@ -140,7 +166,7 @@ namespace MIDI
                 Pause(1000); // 1 second each
             }
         }
-        private static int NumpadMode()
+        private static int NumpadMode(bool endlessMode)
         {
             string numToPlay = rng.Next(10).ToString(); // get number to input
             tts.SpeakAsyncCancelAll();
@@ -148,7 +174,7 @@ namespace MIDI
             Pause(500);
             Console.WriteLine(numToPlay + "\n");
             Timer antiCheatTimer = new Timer
-            { 
+            {
                 Interval = 100,
                 Enabled = true
             };
@@ -166,26 +192,29 @@ namespace MIDI
                 }
             }
             antiCheatTimer.Dispose(); // always dispose your IDisposables when you're done with them
+            int pointsToAdd = endlessMode ? 1 : 5;
             Timer timer = new Timer
             {
                 Interval = 500,
                 Enabled = true
             };
-            int pointsToAdd = 5; // perfect score
-            timer.Elapsed += (timersender, timerevent) => ReducePointsGiven(timersender, timerevent, ref pointsToAdd);
+            if (!endlessMode)
+            {
+                timer.Elapsed += (timersender, timerevent) => ReducePointsGiven(timersender, timerevent, ref pointsToAdd);
+            }
             numPlayed = Console.ReadKey().KeyChar.ToString(); // get the input
             Console.WriteLine();
             timer.Dispose(); // always dispose your IDisposables when you're done with them
-            return NotePlayed(numPlayed, numToPlay, pointsToAdd); // check if they match
+            return NotePlayed(numPlayed, numToPlay, pointsToAdd, endlessMode); // check if they match
         }
-        private static int MIDIMode(OutputDevice outputDevice, InputDevice inputDevice, int mode)
+        private static int MIDIMode(OutputDevice outputDevice, InputDevice inputDevice, int version, bool endlessMode)
         {
             int midiNotePlayed = -1;
             inputDevice.EventReceived += (midisender, midievent) => MidiEventReceived(midisender, midievent, ref midiNotePlayed);
             inputDevice.StartEventsListening(); // turn on the MIDI device
             int noteNumber = rng.Next(12); // get note to play
             double sharpflag = rng.NextDouble(); // used in some modes to modify the note and make the game harder
-            string noteToPlay = GetNoteToPlay(mode, ref noteNumber, sharpflag); // turns the note number and uses the sharpflag to get the note to play
+            string noteToPlay = GetNoteToPlay(version, ref noteNumber, sharpflag); // turns the note number and uses the sharpflag to get the note to play
             outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127)); // plays the note to play
             tts.SpeakAsyncCancelAll();
             tts.SpeakAsync(noteToPlay.Replace("#", " Sharp").Replace("b", " Flat"));
@@ -215,15 +244,18 @@ namespace MIDI
                 Interval = 900,
                 Enabled = true
             };
-            int pointsToAdd = 5; // perfect score
-            timer.Elapsed += (timersender, timerevent) => ReducePointsGiven(timersender, timerevent, ref pointsToAdd);
+            int pointsToAdd = endlessMode ? 1 : 5;
+            if (!endlessMode)
+            {
+                timer.Elapsed += (timersender, timerevent) => ReducePointsGiven(timersender, timerevent, ref pointsToAdd);
+            }
             while (midiNotePlayed == -1)
             {
                 // waiting for MIDI input
             }
             Console.WriteLine(); // once the input is received
             timer.Dispose(); // always dispose your IDisposables when you're done with them
-            return NotePlayed(GetNotePlayed(mode, midiNotePlayed, sharpflag), noteToPlay, pointsToAdd); // check if they match
+            return NotePlayed(GetNotePlayed(version, midiNotePlayed, sharpflag), noteToPlay, pointsToAdd, endlessMode); // check if they match
         }
         private static string GetNoteToPlay(int mode, ref int noteNumber, double sharpflag)
         {
@@ -270,14 +302,14 @@ namespace MIDI
             }
             return notePlayed;
         }
-        private static int NotePlayed(string notePlayed, string noteToPlay, int pointsToAdd)
+        private static int NotePlayed(string notePlayed, string noteToPlay, int pointsToAdd, bool endlessMode)
         {
             int points = 0;
             Console.WriteLine($"You hit: {notePlayed}\n");
             if (notePlayed == noteToPlay) // check if the note played matches the expected note
             {
-                Console.ForegroundColor = pointsToAdd == 5 ? ConsoleColor.Yellow : ConsoleColor.Green; // yellow if perfect, otherwise green
-                Console.WriteLine($"Correct! You scored {pointsToAdd} points.\n");
+                Console.ForegroundColor = pointsToAdd == 5 ? ConsoleColor.Yellow : ConsoleColor.Green;
+                Console.WriteLine($"Correct!" + (endlessMode ? "" : $" You scored {pointsToAdd} points." ) + "\n");
                 Console.ResetColor();
                 tts.SpeakAsyncCancelAll();
                 points += pointsToAdd;
@@ -285,13 +317,12 @@ namespace MIDI
             else // if it is wrong
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Incorrect! You were asked to hit {noteToPlay}, no points for you this time.\n");
+                Console.WriteLine($"Incorrect! You were asked to hit {noteToPlay}" + (endlessMode ? "" : ", no points for you this time") + ".\n");
                 Console.ResetColor();
                 tts.SpeakAsyncCancelAll();
                 tts.SpeakAsync("Incorrect.");
                 Pause(800); // give them some breathing time
             }
-            Pause(400);
             return points;
         }
         private static void Pause(int interval) // yeah we do a lot of pausing
