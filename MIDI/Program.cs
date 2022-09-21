@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Speech.Synthesis;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -387,11 +388,12 @@ T SelectMidiDevice<T>(IList<T> list) // used for input and output devices
             return list[0]; // there's only 1 so just use that one
         case > 1:
             {
+                PropertyInfo deviceName = typeof(T).GetProperty("Name");
                 string[] typeOfDevice = Regex.Split(typeof(T).Name, @"(?<!^)(?=[A-Z])"); // regex necessary because duplicated code is bad
                 Console.WriteLine($"Select your MIDI {typeOfDevice[0]} {typeOfDevice[1]}:");
                 for (int i = 0; i < list.Count; i++) // list out all the devices, if we didn't need to use the index this could be a foreach
                 {
-                    Console.WriteLine($"{i}: {list[i]}");
+                    Console.WriteLine($"{i}: {deviceName.GetValue(list[i])}");
                 }
                 int input = int.Parse(Console.ReadLine()); // get the index selected
                 return input < list.Count && input >= 0 // return the selected device
