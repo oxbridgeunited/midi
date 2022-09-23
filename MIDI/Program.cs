@@ -12,6 +12,7 @@ using Melanchall.DryWetMidi.Multimedia;
 
 Random rng = new();
 SpeechSynthesizer tts = new();
+ManualResetEvent resetEvent = new(false);
 string[] naturalnotes = { "C", null, "D", null, "E", "F", null, "G", null, "A", null, "B" };
 string[] sharpnotes = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
 string[] flatnotes = { "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B" };
@@ -230,6 +231,7 @@ int NumpadMode(bool endlessMode)
 }
 int MIDIMode(OutputDevice outputDevice, InputDevice inputDevice, int version, bool endlessMode)
 {
+    resetEvent.Reset();
     int midiNotePlayed = -1;
     inputDevice.EventReceived += (midisender, midievent) => MidiEventReceived(midisender, midievent, ref midiNotePlayed);
     inputDevice.StartEventsListening(); // turn on the MIDI device
@@ -260,22 +262,18 @@ int MIDIMode(OutputDevice outputDevice, InputDevice inputDevice, int version, bo
         // Natural
         Console.WriteLine(noteASCII.Replace("s", "").Replace("#", "").Replace("f", "").Replace("b", ""));
     }
-    outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127));
-    while (midiNotePlayed == -1)
-    {
-        // waiting for MIDI input
-    }
+    resetEvent.WaitOne();
     antiCheatTimer.Stop();
+    outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127));
     long timeElapsed = antiCheatTimer.ElapsedMilliseconds;
     if (timeElapsed < 100) // if you get caught cheating
     {
         Console.WriteLine("CHEAT! Wait for the note to come up before pressing anything!");
-        outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127));
         Pause(2000);
         return 0; // no points for cheaters
     }
-    int pointsToAdd = endlessMode ? 1 : (int)Math.Max(0, 5 - ((timeElapsed - 100) / 1000));
     Console.WriteLine(); // once the input is received
+    int pointsToAdd = endlessMode ? 1 : (int)Math.Max(0, 5 - ((timeElapsed - 100) / 1000));
     return NotePlayed(GetNotePlayed(version, midiNotePlayed, sharpflag), noteToPlay, pointsToAdd, endlessMode); // check if they match
 }
 string GetNoteToPlay(int mode, ref int noteNumber, double sharpflag)
@@ -408,5 +406,6 @@ void MidiEventReceived(object sender, MidiEventReceivedEventArgs e, ref int outp
     if (e.Event.EventType == MidiEventType.NoteOn) // if the input is the user pressing a note
     { // get the note number out of the wall of text
         output = int.Parse(new string(e.Event.ToString().Split('(', ')')[1].TakeWhile(char.IsDigit).ToArray())) % 12;
+        resetEvent.Set();
     }
 }
