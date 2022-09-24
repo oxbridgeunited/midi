@@ -231,7 +231,6 @@ async Task<int> MIDIMode(OutputDevice outputDevice, InputDevice inputDevice, int
     Stopwatch antiCheatTimer = new();
     antiCheatTimer.Start();
     int noteNumber = rng.Next(12); // get note to play
-    await PlayMIDI(outputDevice, noteNumber, 1000);
     double sharpflag = rng.NextDouble(); // used in some modes to modify the note and make the game harder
     string noteToPlay = GetNoteToPlay(version, ref noteNumber, sharpflag); // turns the note number and uses the sharpflag to get the note to play
     tts.SpeakAsync(noteToPlay.Replace("#", " Sharp").Replace("b", " Flat"));
@@ -254,6 +253,7 @@ async Task<int> MIDIMode(OutputDevice outputDevice, InputDevice inputDevice, int
         // Natural
         Console.WriteLine(noteASCII.Replace("s", "").Replace("#", "").Replace("f", "").Replace("b", ""));
     }
+    await PlayMIDI(outputDevice, noteNumber, 500);
     resetEvent.WaitOne();
     antiCheatTimer.Stop();
     outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127)); // turn off note if still playing
