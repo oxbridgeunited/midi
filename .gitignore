@@ -261,3 +261,4 @@ __pycache__/
 *.pyc
 /MIDI.backup
 /upgrade-assistant.clef
+/MIDI/Properties/PublishProfiles

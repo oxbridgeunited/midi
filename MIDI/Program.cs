@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Speech.Synthesis;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Multimedia;
@@ -111,7 +112,7 @@ if (game)
 }
 while (game) // we're playing
 {
-    GameCode(endlessMode, gameDifficulty, outputDevice, inputDevice); // the game is in here
+    await GameCode(endlessMode, gameDifficulty, outputDevice, inputDevice); // the game is in here
     Console.WriteLine("Want to play again? Type Y to replay the game.");
     if (!Console.ReadLine().Equals("y", StringComparison.OrdinalIgnoreCase)) // if the user doesn't want to play
     {
@@ -147,7 +148,7 @@ bool EndlessOrScore()
     Console.WriteLine("Type a number from 1 to 4");
     return EndlessOrScore();
 }
-void GameCode(bool endlessMode, int input, OutputDevice outputDevice, InputDevice inputDevice = null)
+async Task GameCode(bool endlessMode, int input, OutputDevice outputDevice, InputDevice inputDevice = null)
 {
     PreGameCountDown(3); // get ready...
     int points = 0;
@@ -155,8 +156,9 @@ void GameCode(bool endlessMode, int input, OutputDevice outputDevice, InputDevic
     int rounds = input == 1 ? 30 : 20; // 20 rounds standard, but 30 for Numpad
     while (plays < rounds)
     {
+        tts.SpeakAsyncCancelAll();
         points += input > 1 // pick the correct game
-            ? MIDIMode(outputDevice, inputDevice, input, endlessMode) : NumpadMode(endlessMode); // and add points if they get the note correct
+            ? await MIDIMode(outputDevice, inputDevice, input, endlessMode) : NumpadMode(endlessMode); // and add points if they get the note correct
         plays += 1;
         if (endlessMode)
         {
@@ -174,21 +176,13 @@ void GameCode(bool endlessMode, int input, OutputDevice outputDevice, InputDevic
         Console.ResetColor();
         tts.SpeakAsyncCancelAll();
         tts.SpeakAsync($"Perfect Score! Results: You achieved a perfect score with {points} points. Congratulations!");
-        outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)60, (SevenBitNumber)127)); // C
-        outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)64, (SevenBitNumber)127)); // E
-        outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)67, (SevenBitNumber)127)); // G
-        Pause(100); // C Major for a short period
-        outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)60, (SevenBitNumber)127));
-        outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)64, (SevenBitNumber)127));
-        outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)67, (SevenBitNumber)127));
+        await PlayMIDI(outputDevice, 0, 100); // C Major for a short period
+        await PlayMIDI(outputDevice, 4, 100); // E
+        await PlayMIDI(outputDevice, 7, 100); // G
         Pause(50); // short pause
-        outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)60, (SevenBitNumber)127)); // C
-        outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)64, (SevenBitNumber)127)); // E
-        outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)67, (SevenBitNumber)127)); // G
-        Pause(1000); // C Major for a long period
-        outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)60, (SevenBitNumber)127));
-        outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)64, (SevenBitNumber)127));
-        outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)67, (SevenBitNumber)127));
+        await PlayMIDI(outputDevice, 0, 1000); // C Major for a long period
+        await PlayMIDI(outputDevice, 4, 1000); // E
+        await PlayMIDI(outputDevice, 7, 1000); // G
     }
     else // Regular Score Announcement
     {
@@ -211,7 +205,6 @@ int NumpadMode(bool endlessMode)
 {
     Stopwatch antiCheatTimer = new();
     antiCheatTimer.Start();
-    tts.SpeakAsyncCancelAll();
     string numToPlay = rng.Next(10).ToString(); // get number to input
     tts.SpeakAsync($"{numToPlay}. . . . . . . . . . . .{numToPlay}."); // Using lots of fullstops to generate gap between repeat
     string[] NumberToASCII = { ASCII0, ASCII1, ASCII2, ASCII3, ASCII4, ASCII5, ASCII6, ASCII7, ASCII8, ASCII9 };
@@ -229,7 +222,7 @@ int NumpadMode(bool endlessMode)
     int pointsToAdd = endlessMode ? 1 : (int)Math.Max(0, 5 - ((timeElapsed - 100) / 600));
     return NotePlayed(numPlayed, numToPlay, pointsToAdd, endlessMode); // check if they match
 }
-int MIDIMode(OutputDevice outputDevice, InputDevice inputDevice, int version, bool endlessMode)
+async Task<int> MIDIMode(OutputDevice outputDevice, InputDevice inputDevice, int version, bool endlessMode)
 {
     resetEvent.Reset();
     int midiNotePlayed = -1;
@@ -238,8 +231,7 @@ int MIDIMode(OutputDevice outputDevice, InputDevice inputDevice, int version, bo
     Stopwatch antiCheatTimer = new();
     antiCheatTimer.Start();
     int noteNumber = rng.Next(12); // get note to play
-    outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127)); // plays the note to play
-    tts.SpeakAsyncCancelAll();
+    await PlayMIDI(outputDevice, noteNumber, 1000);
     double sharpflag = rng.NextDouble(); // used in some modes to modify the note and make the game harder
     string noteToPlay = GetNoteToPlay(version, ref noteNumber, sharpflag); // turns the note number and uses the sharpflag to get the note to play
     tts.SpeakAsync(noteToPlay.Replace("#", " Sharp").Replace("b", " Flat"));
@@ -264,7 +256,7 @@ int MIDIMode(OutputDevice outputDevice, InputDevice inputDevice, int version, bo
     }
     resetEvent.WaitOne();
     antiCheatTimer.Stop();
-    outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127));
+    outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127)); // turn off note if still playing
     long timeElapsed = antiCheatTimer.ElapsedMilliseconds;
     if (timeElapsed < 100) // if you get caught cheating
     {
@@ -323,6 +315,7 @@ string GetNotePlayed(int mode, int noteNumber, double sharpflag)
 }
 int NotePlayed(string notePlayed, string noteToPlay, int pointsToAdd, bool endlessMode)
 {
+    tts.SpeakAsyncCancelAll(); // stop TTS once a note is played
     Console.WriteLine($"You hit: {notePlayed}\n");
     int points = 0;
     if (notePlayed == noteToPlay) // check if the note played matches the expected note
@@ -355,7 +348,6 @@ int NotePlayed(string notePlayed, string noteToPlay, int pointsToAdd, bool endle
             }
         }
         Console.ResetColor();
-        tts.SpeakAsyncCancelAll();
         points += pointsToAdd;
     }
     else // if it is wrong
@@ -364,7 +356,6 @@ int NotePlayed(string notePlayed, string noteToPlay, int pointsToAdd, bool endle
         Console.WriteLine(ASCIIno);
         Console.WriteLine($"Incorrect! You were asked to hit {noteToPlay}" + (endlessMode ? "" : ", no points for you this time") + ".\n");
         Console.ResetColor();
-        tts.SpeakAsyncCancelAll();
         tts.SpeakAsync("Incorrect.");
         Pause(800); // give them some breathing time
     }
@@ -408,4 +399,10 @@ void MidiEventReceived(object sender, MidiEventReceivedEventArgs e, ref int outp
         output = int.Parse(new string(e.Event.ToString().Split('(', ')')[1].TakeWhile(char.IsDigit).ToArray())) % 12;
         resetEvent.Set();
     }
+}
+async Task PlayMIDI(OutputDevice outputDevice, int noteNumber, int ms)
+{
+    outputDevice.SendEvent(new NoteOnEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127)); // plays the note to play
+    await Task.Delay(ms);
+    outputDevice.SendEvent(new NoteOffEvent((SevenBitNumber)(noteNumber + 60), (SevenBitNumber)127));
 }
